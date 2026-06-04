@@ -1,36 +1,21 @@
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
-import fs from "fs";
+import { createClient } from "@libsql/client";
 
-// Em produção (Render/Railway), o volume é montado em /data
-// Em dev local, usa a pasta src/
-const DB_PATH = process.env.NODE_ENV === "production"
-  ? "/data/comandas.db"
-  : path.resolve(__dirname, "../comandas.db");
+const client = createClient({
+  url: process.env.TURSO_URL!,
+  authToken: process.env.TURSO_TOKEN!,
+});
 
-// Garante que o diretório existe antes de abrir o banco
-const DB_DIR = path.dirname(DB_PATH);
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
-
+// Wrapper para manter a mesma interface que o sqlite original
 export async function initDB() {
-  const db = await open({
-    filename: DB_PATH,
-    driver: sqlite3.Database,
-  });
-
-  await db.exec("PRAGMA journal_mode=WAL;");
-
-  await db.exec(`
+  // Criar tabelas se não existirem
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS categorias (
       id   INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT UNIQUE NOT NULL
     )
   `);
 
-  await db.exec(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS itens (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       categoria_id   INTEGER NOT NULL,
@@ -43,7 +28,7 @@ export async function initDB() {
     )
   `);
 
-  await db.exec(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS clientes (
       id        INTEGER PRIMARY KEY AUTOINCREMENT,
       nome      TEXT NOT NULL,
@@ -52,7 +37,7 @@ export async function initDB() {
     )
   `);
 
-  await db.exec(`
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS comandas (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       id_cliente     INTEGER,
@@ -66,5 +51,22 @@ export async function initDB() {
     )
   `);
 
-  return db;
+  // Retorna um objeto com a mesma interface do sqlite original
+  return {
+    all: async (sql: string, params: any[] = []) => {
+      const result = await client.execute({ sql, args: params });
+      return result.rows as any[];
+    },
+    get: async (sql: string, params: any[] = []) => {
+      const result = await client.execute({ sql, args: params });
+      return result.rows[0] as any ?? undefined;
+    },
+    run: async (sql: string, params: any[] = []) => {
+      const result = await client.execute({ sql, args: params });
+      return { lastID: Number(result.lastInsertRowid) };
+    },
+    exec: async (sql: string) => {
+      await client.execute(sql);
+    },
+  };
 }

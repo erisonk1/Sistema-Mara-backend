@@ -7,11 +7,10 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.6.0",
     "@types/node": "^20.11.5",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
