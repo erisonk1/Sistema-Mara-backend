@@ -28,7 +28,7 @@ router.get("/comandas/hoje", async (_req, res) => {
   const db = await initDB();
 
   const agora = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+    new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
   );
   const fmt = (d: Date) =>
     d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
