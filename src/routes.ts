@@ -28,30 +28,32 @@ router.get("/comandas/hoje", async (_req, res) => {
   const db = await initDB();
 
   const tz = "America/Sao_Paulo";
-  const agora = new Date(
-    new Date().toLocaleString("pt-BR", { timeZone: tz })
-  );
+  const agora = new Date().toLocaleString("pt-BR", { timeZone: tz });
+  const [dia, mes, anoHora] = agora.split("/");
+  const ano = anoHora.split(",")[0].trim();
 
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("pt-BR", { timeZone: tz });
+  const hoje = `${ano}-${mes}-${dia}`;
 
-  const hoje = fmt(agora);
-
-  const ontemDate = new Date(agora);
+  const ontemDate = new Date();
   ontemDate.setDate(ontemDate.getDate() - 1);
-  const ontem = fmt(ontemDate);
-
-  // intervalo fixo: ontem 00:00 até hoje 23:59:59
-  const inicio = `${ontem}, 00:00:00`;
-  const fim    = `${hoje}, 23:59:59`;
+  const ontemStr = ontemDate.toLocaleString("pt-BR", { timeZone: tz });
+  const [diaO, mesO, anoHoraO] = ontemStr.split("/");
+  const anoO = anoHoraO.split(",")[0].trim();
+  const ontem = `${anoO}-${mesO}-${diaO}`;
 
   const rows = await db.all(
-    "SELECT * FROM comandas WHERE criado_em BETWEEN ? AND ? ORDER BY id DESC",
-    [inicio, fim]
+    `SELECT * FROM comandas
+     WHERE date(
+       substr(criado_em, 7, 4) || '-' ||
+       substr(criado_em, 4, 2) || '-' ||
+       substr(criado_em, 1, 2)
+     ) BETWEEN ? AND ?
+     ORDER BY id DESC`,
+    [ontem, hoje]
   );
+
   res.json(rows.map(mapComanda));
 });
-
 // /comandas/periodo/yyyy-MM-dd/yyyy-MM-dd
 router.get("/comandas/periodo/:inicio/:fim", async (req, res) => {
   const db = await initDB();
