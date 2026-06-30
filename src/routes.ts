@@ -27,25 +27,23 @@ router.get("/comandas", async (_req, res) => {
 router.get("/comandas/hoje", async (_req, res) => {
   const db = await initDB();
 
+  const tz = "America/Sao_Paulo";
   const agora = new Date(
-    new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    new Date().toLocaleString("pt-BR", { timeZone: tz })
   );
+
   const fmt = (d: Date) =>
-    d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    d.toLocaleDateString("pt-BR", { timeZone: tz });
 
   const hoje = fmt(agora);
+
   const ontemDate = new Date(agora);
   ontemDate.setDate(ontemDate.getDate() - 1);
   const ontem = fmt(ontemDate);
 
-  let inicio: string, fim: string;
-  if (agora.getHours() < 1) {
-    inicio = `${ontem}, 00:00:00`;
-    fim    = `${ontem}, 23:59:59`;
-  } else {
-    inicio = `${hoje}, 00:00:00`;
-    fim    = `${hoje}, 23:59:59`;
-  }
+  // intervalo fixo: ontem 00:00 até hoje 23:59:59
+  const inicio = `${ontem}, 00:00:00`;
+  const fim    = `${hoje}, 23:59:59`;
 
   const rows = await db.all(
     "SELECT * FROM comandas WHERE criado_em BETWEEN ? AND ? ORDER BY id DESC",
